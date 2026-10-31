@@ -100,11 +100,12 @@ jobs:
           name=$(basename "$jar" .jar)
           relations='[{"slug":"sodium","type":"optionalDependency"}]'
 
-          KNOWN_VERSIONS=$(curl -sS --fail-with-body -H "X-Api-Token: $CURSEFORGE_TOKEN" "https://minecraft.curseforge.com/api/game/versions")
-          GAME_VERSIONS=$(jq -nc \
+          KNOWN_FILE="$RUNNER_TEMP/curseforge-game-versions.json"
+          curl -sS --fail-with-body -H "X-Api-Token: $CURSEFORGE_TOKEN" "https://minecraft.curseforge.com/api/game/versions" -o "$KNOWN_FILE"
+          GAME_VERSIONS=$(jq -c \
             --arg mc "$MC" --arg loader "$LOADER_NAME" --arg java "$JAVA_TAG" \
-            --argjson known "$KNOWN_VERSIONS" \
-            '[$mc, $loader, "Client", "Server", $java] | map(select(. as $n | any($known[]; .name == $n)))')
+            '. as $known | [$mc, $loader, "Client", "Server", $java] | map(select(. as $n | any($known[]; .name == $n)))' \
+            "$KNOWN_FILE")
           echo "Game versions sent to CurseForge: $GAME_VERSIONS"
           if [ "$(jq 'length' <<< "$GAME_VERSIONS")" -ne 5 ]; then
             echo "::warning::CurseForge does not list every game version for this file (expected $MC, $LOADER_NAME, Client, Server, $JAVA_TAG)"
