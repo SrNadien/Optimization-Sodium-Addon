@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "nadiendev.osa.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "common.ArmorStandMixin",
+    "common.ExperienceOrbAccessor",
+    "common.ItemEntityMixin",
+    "common.LevelTickersAccessor",
+    "common.LevelStorageAccessMixin",
+    "common.ServerGamePacketListenerImplMixin",
+    "common.CraftingMenuMixin"
+  ],
+  "client": [
+    "client.EntityRenderDispatcherMixin",
+    "client.ParticleAccessor",
+    "client.ParticleEngineMixin",
+    "client.RenderTargetMixin",
+    "client.WindowMixin"
+  ],
+  "server": [
+    "server.UtilMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
