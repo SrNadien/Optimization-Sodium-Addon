@@ -55,7 +55,8 @@ public final class AutoTune {
         TuneProfile tier = requested == TuneProfile.AUTO ? hardware.tier() : requested;
         TunePreset preset = TunePreset.of(tier, hardware);
 
-        int graphics = config.tuneGraphics.get() ? applyGraphics(minecraft, preset, force) : 0;
+        boolean lightenOnly = force || tier == TuneProfile.LOW;
+        int graphics = config.tuneGraphics.get() && lightenOnly ? applyGraphics(minecraft, preset, force) : 0;
         int addon = config.tuneAddon.get() ? applyAddon(preset, force) : 0;
         int sodium = config.tuneSodium.get() ? applySodium(preset, force) : 0;
         int chloride = config.tuneChloride.get() && preset.chlorideLow() && ChlorideBridge.available() ? applyChloride(force) : 0;
@@ -122,8 +123,6 @@ public final class AutoTune {
     private static int applyAddon(TunePreset preset, boolean force) {
         OsaConfig.Client config = OsaConfig.CLIENT;
         int changed = 0;
-        changed += fill(config.armorStandMax, preset.armorMax(), force);
-        changed += fill(config.armorStandDistance, preset.armorDistance(), force);
         changed += fill(config.itemMax, preset.itemMax(), force);
         changed += fill(config.itemDistance, preset.itemDistance(), force);
         changed += fill(config.xpMax, preset.xpMax(), force);
@@ -193,7 +192,7 @@ public final class AutoTune {
             changed += chlorideFlag("particles", flag);
         }
         if (force || ChlorideBridge.disabledParticlesEmpty()) {
-            if (ChlorideBridge.addAllNamespaces()) changed++;
+            if (ChlorideBridge.addAllParticles()) changed++;
         }
         if (changed > 0) ChlorideBridge.write();
         return changed;
