@@ -29,6 +29,7 @@
     "client.RenderTargetMixin",
     "client.ScreenEffectRendererMixin",
     "client.SimpleReloadInstanceMixin",
+    "client.SodiumSearchMixin",
     "client.WindowMixin"
   ],
   "server": [
