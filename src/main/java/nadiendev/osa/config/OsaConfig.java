@@ -67,6 +67,14 @@ public final class OsaConfig {
         return clientReady() && CLIENT.math.fastMath;
     }
 
+    public static boolean entityCullingEnabled() {
+        return clientReady() && CLIENT.entityCulling.enabled;
+    }
+
+    public static boolean startupTimerEnabled() {
+        return clientReady() && CLIENT.startup.timer;
+    }
+
     public static boolean hideReloadOverlay() {
         return clientReady() && CLIENT.reload.hideOverlay;
     }
@@ -305,6 +313,8 @@ public final class OsaConfig {
         public Gpu gpu = new Gpu();
         public Fog fog = new Fog();
         public Overlays overlays = new Overlays();
+        public EntityCullingSettings entityCulling = new EntityCullingSettings();
+        public StartupSettings startup = new StartupSettings();
         public Reload reload = new Reload();
         public Terrain terrain = new Terrain();
         public Stability stability = new Stability();
@@ -313,8 +323,6 @@ public final class OsaConfig {
         public MathSettings math = new MathSettings();
 
         public static final class ArmorStands {
-            public int maxRendered = 32;
-            public int renderDistance = 24;
             public boolean hideInvisibleEmpty = true;
         }
 
@@ -350,6 +358,24 @@ public final class OsaConfig {
             public boolean fire = true;
         }
 
+        public static final class EntityCullingSettings {
+            public boolean enabled = false;
+            public boolean displays = true;
+            public boolean armorStands = true;
+            public int maxDistance = 64;
+            public int textMaxDistance = 32;
+            public int neverCullWithin = 12;
+            public double frustumMargin = 2.0;
+            public boolean occlusion = true;
+            public int occlusionMinDistance = 6;
+            public int occlusionRecheckMs = 200;
+            public int occlusionBudget = 150;
+        }
+
+        public static final class StartupSettings {
+            public boolean timer = true;
+        }
+
         public static final class Reload {
             public boolean profile = true;
             public boolean hideOverlay = true;
@@ -371,7 +397,7 @@ public final class OsaConfig {
         }
 
         public static final class AutoTuneSettings {
-            public boolean enabled = true;
+            public boolean enabled = false;
             public TuneProfile profile = TuneProfile.AUTO;
             public boolean applied = false;
             public boolean graphics = true;
@@ -405,6 +431,8 @@ public final class OsaConfig {
             if (gpu == null) gpu = new Gpu();
             if (fog == null) fog = new Fog();
             if (overlays == null) overlays = new Overlays();
+            if (entityCulling == null) entityCulling = new EntityCullingSettings();
+            if (startup == null) startup = new StartupSettings();
             if (reload == null) reload = new Reload();
             if (reload.skipListeners == null) reload.skipListeners = new ArrayList<>();
             if (terrain == null) terrain = new Terrain();
@@ -419,8 +447,6 @@ public final class OsaConfig {
         }
 
         void sanitize() {
-            armorStands.maxRendered = clamp(armorStands.maxRendered, 0, 4096);
-            armorStands.renderDistance = clamp(armorStands.renderDistance, 4, 256);
             items.maxRendered = clamp(items.maxRendered, 0, 4096);
             items.renderDistance = clamp(items.renderDistance, 4, 256);
             xp.maxRendered = clamp(xp.maxRendered, 0, 4096);
@@ -428,6 +454,13 @@ public final class OsaConfig {
             particles.maxTotal = clamp(particles.maxTotal, 0, 65536);
             particles.maxPerTick = clamp(particles.maxPerTick, 0, 65536);
             particles.maxDistance = clamp(particles.maxDistance, 8, 256);
+            entityCulling.maxDistance = clamp(entityCulling.maxDistance, 0, 512);
+            entityCulling.textMaxDistance = clamp(entityCulling.textMaxDistance, 0, 512);
+            entityCulling.neverCullWithin = clamp(entityCulling.neverCullWithin, 0, 128);
+            entityCulling.frustumMargin = clamp(entityCulling.frustumMargin, 0.0, 16.0);
+            entityCulling.occlusionMinDistance = clamp(entityCulling.occlusionMinDistance, 0, 128);
+            entityCulling.occlusionRecheckMs = clamp(entityCulling.occlusionRecheckMs, 50, 5000);
+            entityCulling.occlusionBudget = clamp(entityCulling.occlusionBudget, 10, 2000);
             reload.reportSeconds = clamp(reload.reportSeconds, 0, 3600);
             reload.topCount = clamp(reload.topCount, 1, 30);
             stability.tintIntervalTicks = clamp(stability.tintIntervalTicks, 1, 40);
@@ -447,6 +480,8 @@ public final class OsaConfig {
             gpu = other.gpu;
             fog = other.fog;
             overlays = other.overlays;
+            entityCulling = other.entityCulling;
+            startup = other.startup;
             reload = other.reload;
             terrain = other.terrain;
             stability = other.stability;

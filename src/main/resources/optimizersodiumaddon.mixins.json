@@ -28,6 +28,7 @@
     "client.FireworkStarterMixin",
     "client.LoadingOverlayMixin",
     "client.ChunkBuilderMeshingTaskMixin",
+    "client.SodiumSearchMixin",
     "client.ClientLevelMixin",
     "client.OptionInstanceAccessor"
   ],

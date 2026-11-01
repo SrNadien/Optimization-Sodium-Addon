@@ -55,7 +55,8 @@ public final class AutoTune {
         TuneProfile tier = requested == TuneProfile.AUTO ? hardware.tier() : requested;
         TunePreset preset = TunePreset.of(tier, hardware);
 
-        int graphics = config.autoTune.graphics ? applyGraphics(minecraft, preset, force) : 0;
+        boolean lightenOnly = force || tier == TuneProfile.LOW;
+        int graphics = config.autoTune.graphics && lightenOnly ? applyGraphics(minecraft, preset, force) : 0;
         int addon = config.autoTune.addon ? applyAddon(preset, force) : 0;
         int sodium = config.autoTune.sodium ? applySodium(preset, force) : 0;
         int chloride = config.autoTune.chloride && preset.chlorideLow() && ChlorideBridge.available() ? applyChloride(force) : 0;
@@ -123,8 +124,6 @@ public final class AutoTune {
         OsaConfig.Client config = OsaConfig.CLIENT;
         OsaConfig.Client defaults = new OsaConfig.Client();
         int changed = 0;
-        changed += fill(() -> config.armorStands.maxRendered, v -> config.armorStands.maxRendered = v, defaults.armorStands.maxRendered, preset.armorMax(), force);
-        changed += fill(() -> config.armorStands.renderDistance, v -> config.armorStands.renderDistance = v, defaults.armorStands.renderDistance, preset.armorDistance(), force);
         changed += fill(() -> config.items.maxRendered, v -> config.items.maxRendered = v, defaults.items.maxRendered, preset.itemMax(), force);
         changed += fill(() -> config.items.renderDistance, v -> config.items.renderDistance = v, defaults.items.renderDistance, preset.itemDistance(), force);
         changed += fill(() -> config.xp.maxRendered, v -> config.xp.maxRendered = v, defaults.xp.maxRendered, preset.xpMax(), force);
@@ -194,7 +193,7 @@ public final class AutoTune {
             changed += chlorideFlag("particles", flag);
         }
         if (force || ChlorideBridge.disabledParticlesEmpty()) {
-            if (ChlorideBridge.addAllNamespaces()) changed++;
+            if (ChlorideBridge.addAllParticles()) changed++;
         }
         if (changed > 0) ChlorideBridge.write();
         return changed;

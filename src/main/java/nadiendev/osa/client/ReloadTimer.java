@@ -18,6 +18,7 @@ public final class ReloadTimer {
     private static volatile boolean chat;
     private static volatile long startNanos;
     private static volatile long lastNanos;
+    private static volatile long initialNanos;
     private static volatile long hideAtMillis;
 
     private ReloadTimer() {}
@@ -29,11 +30,19 @@ public final class ReloadTimer {
     }
 
     static void end(long total) {
+        if (!visible) {
+            initialNanos = total;
+            StartupTimer.markReady();
+        }
         lastNanos = total;
         completed = true;
         running = false;
         hideAtMillis = Util.getMillis() + SHOW_MILLIS;
         if (chat && visible) announce();
+    }
+
+    public static long initial() {
+        return initialNanos;
     }
 
     public static boolean chatEnabled() {

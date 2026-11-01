@@ -3,13 +3,16 @@ package nadiendev.osa.loader;
 import nadiendev.osa.OptimizerSodiumAddon;
 import nadiendev.osa.client.AutoTune;
 import nadiendev.osa.client.BetterGrassModels;
+import nadiendev.osa.client.CullCommands;
 import nadiendev.osa.client.DynamicLights;
+import nadiendev.osa.client.EntityCulling;
 import nadiendev.osa.client.GpuLeakCleaner;
 import nadiendev.osa.client.JoinTimer;
 import nadiendev.osa.client.ParticleLimits;
 import nadiendev.osa.client.ReloadCommands;
 import nadiendev.osa.client.ReloadTimer;
 import nadiendev.osa.client.RenderLimits;
+import nadiendev.osa.client.StartupTimer;
 import nadiendev.osa.client.TintCoalescer;
 import nadiendev.osa.client.TuneCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -39,8 +42,12 @@ public final class ClientHooks {
         ScreenEvents.BEFORE_INIT.register((client, screen, width, height) -> {
             if (screen instanceof ConnectScreen) JoinTimer.onConnectScreen();
         });
-        ScreenEvents.AFTER_INIT.register((client, screen, width, height) ->
-                ScreenEvents.afterExtract(screen).register((current, graphics, mouseX, mouseY, partialTick) -> ReloadTimer.drawDone(graphics)));
+        ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+            ScreenEvents.afterExtract(screen).register((current, graphics, mouseX, mouseY, partialTick) -> {
+                ReloadTimer.drawDone(graphics);
+                StartupTimer.draw(current, graphics);
+            });
+        });
         HudElementRegistry.attachElementAfter(VanillaHudElements.CHAT,
                 Identifier.fromNamespaceAndPath(OptimizerSodiumAddon.MODID, "reload_timer"),
                 (graphics, deltaTracker) -> {
@@ -49,6 +56,7 @@ public final class ClientHooks {
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, buildContext) -> {
             ReloadCommands.register(dispatcher);
+            CullCommands.register(dispatcher);
             TuneCommands.register(dispatcher);
         });
 
@@ -58,6 +66,7 @@ public final class ClientHooks {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             RenderLimits.clear();
             DynamicLights.clear();
+            EntityCulling.clear();
             TintCoalescer.clear();
             JoinTimer.onLogout();
         });
