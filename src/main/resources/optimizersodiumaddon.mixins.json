@@ -14,13 +14,21 @@
     "common.ServerLevelMixin"
   ],
   "client": [
+    "client.BlockLightEngineMixin",
+    "client.ChunkBuilderMeshingTaskMixin",
+    "client.ClientLevelMixin",
     "client.ClientPacketListenerMixin",
     "client.EntityRenderDispatcherMixin",
     "client.FogRendererMixin",
+    "client.LightEngineAccessor",
+    "client.LoadingOverlayMixin",
+    "client.MthMixin",
+    "client.OptionInstanceAccessor",
     "client.ParticleAccessor",
     "client.ParticleEngineMixin",
     "client.RenderTargetMixin",
     "client.ScreenEffectRendererMixin",
+    "client.SimpleReloadInstanceMixin",
     "client.WindowMixin"
   ],
   "server": [
