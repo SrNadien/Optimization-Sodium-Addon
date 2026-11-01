@@ -3,6 +3,9 @@ package nadiendev.osa.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import nadiendev.osa.OptimizerSodiumAddon;
+import nadiendev.osa.client.DynamicLightSettings;
+import nadiendev.osa.client.FastMath;
+import nadiendev.osa.client.TuneProfile;
 import nadiendev.osa.loader.Platform;
 import net.minecraft.resources.ResourceLocation;
 
@@ -15,6 +18,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class OsaConfig {
@@ -57,6 +61,43 @@ public final class OsaConfig {
 
     public static boolean gpuLeakFixEnabled() {
         return !clientReady() || CLIENT.gpu.leakFix;
+    }
+
+    public static boolean fastMathConfigured() {
+        return clientReady() && CLIENT.math.fastMath;
+    }
+
+    public static boolean hideReloadOverlay() {
+        return clientReady() && CLIENT.reload.hideOverlay;
+    }
+
+    public static boolean reloadCounterEnabled() {
+        return clientReady() && CLIENT.reload.counter;
+    }
+
+    public static boolean reloadWatched() {
+        return clientReady() && (CLIENT.reload.profile || !CLIENT.reload.skipListeners.isEmpty());
+    }
+
+    public static boolean betterGrassEnabled() {
+        return clientReady() && CLIENT.terrain.betterGrass;
+    }
+
+    public static List<ResourceLocation> betterGrassBlocks() {
+        List<String> names = clientReady() ? CLIENT.terrain.betterGrassBlocks : Client.Terrain.defaultBlocks();
+        return names.stream().filter(Objects::nonNull).map(ResourceLocation::tryParse).filter(Objects::nonNull).toList();
+    }
+
+    public static boolean skipBrokenBlocksEnabled() {
+        return clientReady() && CLIENT.stability.skipBrokenBlocks;
+    }
+
+    public static boolean coalesceTintsEnabled() {
+        return clientReady() && CLIENT.stability.coalesceTints;
+    }
+
+    public static int tintIntervalTicks() {
+        return clientReady() ? CLIENT.stability.tintIntervalTicks : 1;
     }
 
     public static Path file() {
@@ -108,6 +149,12 @@ public final class OsaConfig {
     private static void invalidateCaches() {
         aiWhitelistExact = null;
         aiWhitelistNamespaces = null;
+        refreshClientCaches();
+    }
+
+    public static void refreshClientCaches() {
+        FastMath.setEnabled(fastMathConfigured());
+        DynamicLightSettings.refresh();
     }
 
     public static boolean isAiWhitelisted(ResourceLocation id) {
@@ -260,6 +307,12 @@ public final class OsaConfig {
         public Window window = new Window();
         public Fog fog = new Fog();
         public Overlays overlays = new Overlays();
+        public Reload reload = new Reload();
+        public Terrain terrain = new Terrain();
+        public Stability stability = new Stability();
+        public Tune autoTune = new Tune();
+        public Lights dynamicLights = new Lights();
+        public MathOptions math = new MathOptions();
 
         public static final class ArmorStands {
             public int maxRendered = 32;
@@ -303,6 +356,57 @@ public final class OsaConfig {
             public boolean fire = true;
         }
 
+        public static final class Reload {
+            public boolean profile = true;
+            public boolean hideOverlay = true;
+            public boolean counter = true;
+            public int reportSeconds = 10;
+            public int topCount = 8;
+            public List<String> skipListeners = new ArrayList<>();
+        }
+
+        public static final class Terrain {
+            public boolean betterGrass = false;
+            public List<String> betterGrassBlocks = defaultBlocks();
+
+            public static List<String> defaultBlocks() {
+                return new ArrayList<>(List.of("minecraft:grass_block", "minecraft:podzol", "minecraft:mycelium"));
+            }
+        }
+
+        public static final class Stability {
+            public boolean skipBrokenBlocks = true;
+            public boolean coalesceTints = true;
+            public int tintIntervalTicks = 4;
+        }
+
+        public static final class Tune {
+            public boolean enabled = true;
+            public TuneProfile profile = TuneProfile.AUTO;
+            public boolean applied = false;
+            public boolean graphics = true;
+            public boolean sodium = true;
+            public boolean chloride = true;
+            public boolean addon = true;
+            public int renderDistanceLow = 2;
+            public int renderDistanceMedium = 10;
+            public int renderDistanceHigh = 16;
+        }
+
+        public static final class Lights {
+            public boolean enabled = false;
+            public int maxSources = 24;
+            public int maxDistance = 32;
+            public int updateTicks = 2;
+            public boolean burningEntities = true;
+            public List<String> items = new ArrayList<>(List.of("minecraft:lava_bucket=15", "minecraft:blaze_rod=10"));
+            public List<String> entities = new ArrayList<>(List.of("minecraft:blaze=10", "minecraft:fireball=12", "minecraft:small_fireball=12", "minecraft:magma_cube=8"));
+        }
+
+        public static final class MathOptions {
+            public boolean fastMath = false;
+        }
+
         void fillMissing() {
             if (armorStands == null) armorStands = new ArmorStands();
             if (items == null) items = new Items();
@@ -312,6 +416,17 @@ public final class OsaConfig {
             if (window == null) window = new Window();
             if (fog == null) fog = new Fog();
             if (overlays == null) overlays = new Overlays();
+            if (reload == null) reload = new Reload();
+            if (reload.skipListeners == null) reload.skipListeners = new ArrayList<>();
+            if (terrain == null) terrain = new Terrain();
+            if (terrain.betterGrassBlocks == null) terrain.betterGrassBlocks = new ArrayList<>();
+            if (stability == null) stability = new Stability();
+            if (autoTune == null) autoTune = new Tune();
+            if (autoTune.profile == null) autoTune.profile = TuneProfile.AUTO;
+            if (dynamicLights == null) dynamicLights = new Lights();
+            if (dynamicLights.items == null) dynamicLights.items = new ArrayList<>();
+            if (dynamicLights.entities == null) dynamicLights.entities = new ArrayList<>();
+            if (math == null) math = new MathOptions();
         }
 
         void sanitize() {
@@ -324,6 +439,15 @@ public final class OsaConfig {
             particles.maxTotal = clamp(particles.maxTotal, 0, 65536);
             particles.maxPerTick = clamp(particles.maxPerTick, 0, 65536);
             particles.maxDistance = clamp(particles.maxDistance, 8, 256);
+            reload.reportSeconds = clamp(reload.reportSeconds, 0, 3600);
+            reload.topCount = clamp(reload.topCount, 1, 30);
+            stability.tintIntervalTicks = clamp(stability.tintIntervalTicks, 1, 40);
+            autoTune.renderDistanceLow = clamp(autoTune.renderDistanceLow, 2, 32);
+            autoTune.renderDistanceMedium = clamp(autoTune.renderDistanceMedium, 2, 32);
+            autoTune.renderDistanceHigh = clamp(autoTune.renderDistanceHigh, 2, 32);
+            dynamicLights.maxSources = clamp(dynamicLights.maxSources, 1, 256);
+            dynamicLights.maxDistance = clamp(dynamicLights.maxDistance, 8, 128);
+            dynamicLights.updateTicks = clamp(dynamicLights.updateTicks, 1, 20);
         }
 
         void copyFrom(Client other) {
@@ -335,6 +459,12 @@ public final class OsaConfig {
             window = other.window;
             fog = other.fog;
             overlays = other.overlays;
+            reload = other.reload;
+            terrain = other.terrain;
+            stability = other.stability;
+            autoTune = other.autoTune;
+            dynamicLights = other.dynamicLights;
+            math = other.math;
         }
     }
 }
