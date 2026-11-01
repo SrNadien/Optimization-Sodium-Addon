@@ -42,8 +42,23 @@ Config del server: `world/serverconfig/optimizersodiumaddon-server.toml`. El web
 | Quitar niebla de terreno, agua, lava y nieve en polvo | `fog.*` |
 | Quitar la textura de agua y las llamas sobre la vista | `overlays.*` |
 | Cronómetro de entrada al server: dice en el chat y en el log cuánto tardó cada etapa | siempre activo |
+| No dibujar la pantalla de carga de Mojang al recargar recursos, y mostrar el tiempo de la recarga | `reload.hideOverlay`, `reload.counter` |
+| Informe de los listeners más lentos de cada recarga y lista para saltar los que no hacen falta | `reload.profile`, `reload.skipListeners` |
+| Ajuste automático según el hardware, sin pisar lo que ya cambiaste | `autoTune.*` |
+| Luces dinámicas (antorchas en mano, ítems tirados, mobs, entidades en llamas) | `dynamicLights.*` |
+| Matemáticas rápidas (seno y coseno por tabla al dibujar) | `math.fastMath` |
+| Omitir un bloque que falla al dibujarse en vez de cerrar el juego | `stability.skipBrokenBlocks` |
+| Agrupar las limpiezas de colores de bioma que causan tirones | `stability.coalesceTints` |
+| Césped y nieve mejorados en los escalones | `terrain.betterGrass` |
 
 Config del cliente: `config/optimizersodiumaddon-client.toml`.
+
+### Comandos del cliente
+
+| Comando | Qué hace |
+|---|---|
+| `/osareload` | Muestra en el chat el tiempo de la última recarga de recursos; `on` y `off` lo escriben tras cada recarga |
+| `/osatune [info|auto|low|medium|high]` | Detecta el hardware o aplica un perfil gráfico |
 
 ## Comandos (`/osa`, nivel OP 2+)
 

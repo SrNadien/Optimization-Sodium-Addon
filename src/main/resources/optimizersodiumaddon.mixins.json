@@ -19,6 +19,15 @@
     "client.ParticleAccessor",
     "client.ParticleEngineMixin",
     "client.RenderTargetMixin",
+    "client.SimpleReloadInstanceMixin",
+    "client.MthMixin",
+    "client.BlockLightEngineMixin",
+    "client.LightEngineAccessor",
+    "client.FireworkStarterMixin",
+    "client.LoadingOverlayMixin",
+    "client.ChunkBuilderMeshingTaskMixin",
+    "client.ClientLevelMixin",
+    "client.OptionInstanceAccessor",
     "client.WindowMixin"
   ],
   "server": [

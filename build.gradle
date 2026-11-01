@@ -20,7 +20,9 @@ runs {
         systemProperty 'forge.logging.console.level', 'debug'
         modSource project.sourceSets.main
     }
-    client {}
+    client {
+        programArguments.addAll '--quickPlayMultiplayer', 'localhost:25565', '--width', '960', '--height', '540'
+    }
     server {
         programArgument '--nogui'
     }
