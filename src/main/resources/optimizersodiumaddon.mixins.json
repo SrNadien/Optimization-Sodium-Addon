@@ -25,6 +25,7 @@
     "client.ParticleEngineMixin",
     "client.RenderTargetMixin",
     "client.SimpleReloadInstanceMixin",
+    "client.SodiumSearchMixin",
     "client.WindowMixin"
   ],
   "server": [

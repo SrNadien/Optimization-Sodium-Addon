@@ -62,6 +62,14 @@ public final class OsaConfig {
         return !clientReady() || CLIENT.gpuLeakFix.get();
     }
 
+    public static boolean entityCullingEnabled() {
+        return clientReady() && CLIENT.entityCulling.get();
+    }
+
+    public static boolean startupTimerEnabled() {
+        return clientReady() && CLIENT.startupTimer.get();
+    }
+
     public static boolean fastMathConfigured() {
         return clientReady() && CLIENT.fastMath.get();
     }
@@ -196,8 +204,6 @@ public final class OsaConfig {
     }
 
     public static final class Client {
-        public final ModConfigSpec.IntValue armorStandMax;
-        public final ModConfigSpec.IntValue armorStandDistance;
         public final ModConfigSpec.BooleanValue armorStandHideInvisibleEmpty;
 
         public final ModConfigSpec.IntValue itemMax;
@@ -220,6 +226,18 @@ public final class OsaConfig {
         public final ModConfigSpec.BooleanValue fireOverlay;
 
         public final ModConfigSpec.BooleanValue reloadProfile;
+        public final ModConfigSpec.BooleanValue entityCulling;
+        public final ModConfigSpec.BooleanValue cullDisplays;
+        public final ModConfigSpec.BooleanValue cullArmorStands;
+        public final ModConfigSpec.IntValue cullMaxDistance;
+        public final ModConfigSpec.IntValue cullTextMaxDistance;
+        public final ModConfigSpec.IntValue cullNeverWithin;
+        public final ModConfigSpec.DoubleValue cullFrustumMargin;
+        public final ModConfigSpec.BooleanValue cullOcclusion;
+        public final ModConfigSpec.IntValue cullOcclusionMinDistance;
+        public final ModConfigSpec.IntValue cullOcclusionRecheckMs;
+        public final ModConfigSpec.IntValue cullOcclusionBudget;
+        public final ModConfigSpec.BooleanValue startupTimer;
         public final ModConfigSpec.BooleanValue betterGrass;
         public final ModConfigSpec.ConfigValue<List<? extends String>> betterGrassBlocks;
         public final ModConfigSpec.BooleanValue skipBrokenBlocks;
@@ -253,10 +271,6 @@ public final class OsaConfig {
 
         Client(ModConfigSpec.Builder b) {
             b.comment("Armor stands").push("armorStands");
-            armorStandMax = b.comment("Maximo de armor stands dibujados a la vez (los mas cercanos). 0 = sin limite.")
-                    .defineInRange("maxRendered", 32, 0, 4096);
-            armorStandDistance = b.comment("Distancia maxima (bloques) para dibujar armor stands.")
-                    .defineInRange("renderDistance", 24, 4, 256);
             armorStandHideInvisibleEmpty = b.comment("No procesar armor stands invisibles sin nada equipado (no se ven igual).")
                     .define("hideInvisibleEmpty", true);
             b.pop();
@@ -319,11 +333,41 @@ public final class OsaConfig {
                     .defineListAllowEmpty("skipListeners", List.of(), () -> "", o -> o instanceof String);
             b.pop();
 
+            b.comment("Arranque del juego").push("startup");
+            startupTimer = b.comment("Mostrar en la pantalla de titulo cuanto tardo el juego en arrancar, durante unos segundos. El tiempo siempre se escribe en el log.")
+                    .define("timer", true);
+            b.pop();
+
             b.comment("Terreno").push("terrain");
             betterGrass = b.comment("Cesped y nieve mejorados: si el bloque de al lado y un nivel mas abajo es del mismo tipo, el lateral usa la textura de arriba y los escalones se ven continuos.")
                     .define("betterGrass", false);
             betterGrassBlocks = b.comment("Bloques a los que se aplica. Un cambio en esta lista se nota al recargar recursos (F3+T).")
                     .defineListAllowEmpty("betterGrassBlocks", List.of("minecraft:grass_block", "minecraft:podzol", "minecraft:mycelium"), () -> "", o -> o instanceof String);
+            b.pop();
+
+            b.comment("Culling de entidades que no ves: modelos hechos con entidades Display y armor stands. Solo evita dibujarlas.").push("entityCulling");
+            entityCulling = b.comment("Activa el culling. Apagado por defecto: las entidades que no se ven dejan de dibujarse y pueden aparecer con un pequeno retraso al girar.")
+                    .define("enabled", false);
+            cullDisplays = b.comment("Aplicar a entidades Display (item, bloque y texto), como las de los modelos de ModelEngine.")
+                    .define("displays", true);
+            cullArmorStands = b.comment("Aplicar el culling a los armor stands por distancia y por muros, sin limite por cantidad (los que tienen nombre visible nunca se descartan).")
+                    .define("armorStands", true);
+            cullMaxDistance = b.comment("Distancia maxima (bloques) a la que se dibuja una entidad Display o un armor stand. 0 = sin limite.")
+                    .defineInRange("maxDistance", 64, 0, 512);
+            cullTextMaxDistance = b.comment("Distancia maxima (bloques) para entidades Display de texto. 0 = sin limite.")
+                    .defineInRange("textMaxDistance", 32, 0, 512);
+            cullNeverWithin = b.comment("Dentro de esta distancia (bloques) nunca se descarta nada.")
+                    .defineInRange("neverCullWithin", 12, 0, 128);
+            cullFrustumMargin = b.comment("Margen (bloques) alrededor de una Display al comprobar si esta dentro de la camara. Mas margen = menos descartes y menos pop-in.")
+                    .defineInRange("frustumMargin", 2.0, 0.0, 16.0);
+            cullOcclusion = b.comment("Descartar las entidades que quedan tapadas por bloques opacos entre la camara y la entidad.")
+                    .define("occlusion", true);
+            cullOcclusionMinDistance = b.comment("Distancia minima (bloques) para comprobar muros; mas cerca no se comprueba.")
+                    .defineInRange("occlusionMinDistance", 6, 0, 128);
+            cullOcclusionRecheckMs = b.comment("Cada cuantos milisegundos se vuelve a comprobar si una entidad esta tapada.")
+                    .defineInRange("occlusionRecheckMs", 200, 50, 5000);
+            cullOcclusionBudget = b.comment("Maximo de comprobaciones de muros cada 50 ms. Reparte el coste entre fotogramas.")
+                    .defineInRange("occlusionBudget", 150, 10, 2000);
             b.pop();
 
             b.comment("Estabilidad y tirones al dibujar").push("stability");
@@ -336,9 +380,9 @@ public final class OsaConfig {
             b.pop();
 
             b.comment("Ajuste automatico segun tu PC. Solo toca la configuracion grafica.").push("autoTune");
-            tuneEnabled = b.comment("Activado por defecto: la primera vez que se abre el juego detecta el hardware y completa solo lo que no cambiaste.",
-                            "Si lo apagas y lo volves a encender a mano (o usas /osatune), configura todo con el perfil.")
-                    .define("enabled", true);
+            tuneEnabled = b.comment("Apagado por defecto. Si lo dejas en true antes del primer arranque, detecta el hardware y completa solo lo que no cambiaste, sin hacer el juego mas pesado.",
+                            "Encenderlo a mano desde las opciones (o usar /osatune) configura todo con el perfil.")
+                    .define("enabled", false);
             tuneProfile = b.comment("AUTO elige segun el hardware. LOW, MEDIUM o HIGH fuerzan ese perfil.")
                     .defineEnum("profile", TuneProfile.AUTO);
             tuneApplied = b.comment("Lo marca el mod al aplicar el perfil. Ponelo en false para que se aplique otra vez al proximo arranque.")

@@ -5,9 +5,11 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import nadiendev.osa.client.ReloadTimer;
 import nadiendev.osa.OsaConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.LoadingOverlay;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Util;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,7 +22,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class LoadingOverlayMixin {
     @Shadow
     @Final
+    private Minecraft minecraft;
+
+    @Shadow
+    @Final
     private boolean fadeIn;
+
+    @Shadow
+    private long fadeInStart;
+
+    @Shadow
+    private long fadeOutStart;
 
     @Unique
     private boolean osa$hidden() {
@@ -29,7 +41,20 @@ public abstract class LoadingOverlayMixin {
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void osa$drawCounter(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (this.fadeIn) ReloadTimer.drawLive(graphics);
+        if (!this.fadeIn) return;
+        if (osa$hidden() && osa$screenMissing()) {
+            this.minecraft.screen.extractRenderStateWithTooltipAndSubtitles(graphics, mouseX, mouseY, partialTick);
+        }
+        ReloadTimer.drawLive(graphics);
+    }
+
+    @Unique
+    private boolean osa$screenMissing() {
+        if (this.minecraft.screen == null || this.minecraft.getOverlay() != (Object) this) return false;
+        long now = Util.getMillis();
+        boolean fadingIn = this.fadeInStart > -1L && now - this.fadeInStart < 500L;
+        boolean fadingOut = this.fadeOutStart > -1L && now - this.fadeOutStart >= 1000L;
+        return !fadingIn && !fadingOut;
     }
 
     @WrapOperation(method = "extractRenderState", at = @At(value = "INVOKE",
