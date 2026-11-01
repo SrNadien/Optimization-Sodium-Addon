@@ -1,5 +1,6 @@
 package nadiendev.osa.mixin.client;
 
+import nadiendev.osa.client.EntityCulling;
 import nadiendev.osa.client.RenderLimits;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -14,7 +15,7 @@ public abstract class EntityRenderDispatcherMixin {
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private <E extends Entity> void osa$limit(E entity, Frustum frustum, double camX, double camY, double camZ, float partialTicks,
                                               CallbackInfoReturnable<Boolean> cir) {
-        if (!RenderLimits.shouldRender(entity, camX, camY, camZ)) {
+        if (!RenderLimits.shouldRender(entity, camX, camY, camZ) || EntityCulling.shouldSkip(entity, frustum, camX, camY, camZ)) {
             cir.setReturnValue(false);
         }
     }
