@@ -16,20 +16,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Decide que armor stands, items y orbes se dibujan.
- * Se recalcula cada pocos ticks (no en cada frame): ordenar 200 armor stands 60 veces por segundo
- * costaria mas que lo que ahorra.
- *
- * Un culling por distancia comun dibuja igual 200 armor stands si estan a 20 bloques.
- * Aca se dibujan solo los N mas cercanos.
- */
 public final class RenderLimits {
     private static final int REFRESH_TICKS = 5;
-    /** Lo que esta muy cerca siempre se dibuja, aunque todavia no se haya recalculado la lista. */
     private static final double ALWAYS_VISIBLE_SQ = 8 * 8;
 
-    private static Set<Entity> allowedStands = new ReferenceOpenHashSet<>();
     private static Set<Entity> allowedItems = new ReferenceOpenHashSet<>();
     private static Set<Entity> allowedXp = new ReferenceOpenHashSet<>();
     private static int ticks;
@@ -37,7 +27,6 @@ public final class RenderLimits {
     private RenderLimits() {}
 
     static void clear() {
-        allowedStands = new ReferenceOpenHashSet<>();
         allowedItems = new ReferenceOpenHashSet<>();
         allowedXp = new ReferenceOpenHashSet<>();
     }
@@ -51,25 +40,22 @@ public final class RenderLimits {
         }
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
 
-        List<Entity> stands = new ArrayList<>();
         List<Entity> items = new ArrayList<>();
         List<Entity> orbs = new ArrayList<>();
         for (Entity e : level.entitiesForRendering()) {
-            if (e instanceof ArmorStand s) {
-                if (!(s.hasCustomName() && s.isCustomNameVisible())) stands.add(e);
-            }
-            else if (e instanceof ItemEntity) items.add(e);
+            if (e instanceof ItemEntity) items.add(e);
             else if (e instanceof ExperienceOrb) orbs.add(e);
         }
 
-        allowedStands = pick(stands, cam, OsaConfig.CLIENT.armorStandMax.get(), OsaConfig.CLIENT.armorStandDistance.get());
         allowedItems = pick(items, cam, OsaConfig.CLIENT.itemMax.get(), OsaConfig.CLIENT.itemDistance.get());
         allowedXp = pick(orbs, cam, OsaConfig.CLIENT.xpMax.get(), OsaConfig.CLIENT.xpDistance.get());
     }
 
     private static Set<Entity> pick(List<Entity> list, Vec3 cam, int max, int distance) {
-        double maxSq = (double) distance * distance;
-        list.removeIf(e -> e.distanceToSqr(cam) > maxSq);
+        if (distance > 0) {
+            double maxSq = (double) distance * distance;
+            list.removeIf(e -> e.distanceToSqr(cam) > maxSq);
+        }
         if (max > 0 && list.size() > max) {
             list.sort(Comparator.comparingDouble(e -> e.distanceToSqr(cam)));
             list = list.subList(0, max);
@@ -77,15 +63,12 @@ public final class RenderLimits {
         return new ReferenceOpenHashSet<>(list);
     }
 
-    /** @return false si la entidad NO se debe dibujar; true = dejar que decida el juego. */
     public static boolean shouldRender(Entity e, double camX, double camY, double camZ) {
         if (!OsaConfig.clientReady()) return true;
         Set<Entity> allowed;
         if (e instanceof ArmorStand stand) {
-            // Hologramas: armor stand invisible con nombre visible. Siempre se dibuja (es el texto).
             if (stand.hasCustomName() && stand.isCustomNameVisible()) return true;
-            if (OsaConfig.CLIENT.armorStandHideInvisibleEmpty.get() && stand.isInvisible() && isEmpty(stand)) return false;
-            allowed = allowedStands;
+            return !(OsaConfig.CLIENT.armorStandHideInvisibleEmpty.get() && stand.isInvisible() && isEmpty(stand));
         } else if (e instanceof ItemEntity) {
             allowed = allowedItems;
         } else if (e instanceof ExperienceOrb) {

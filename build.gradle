@@ -21,7 +21,8 @@ runs {
         modSource project.sourceSets.main
     }
     client {
-        programArguments.addAll '--quickPlayMultiplayer', 'localhost:25565', '--width', '960', '--height', '540'
+        def world = project.findProperty('osa_world') ?: 'Mundo nuevo'
+        if (world) programArguments.addAll '--quickPlaySingleplayer', world
     }
     server {
         programArgument '--nogui'

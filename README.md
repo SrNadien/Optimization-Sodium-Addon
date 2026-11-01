@@ -50,6 +50,8 @@ Config del server: `world/serverconfig/optimizersodiumaddon-server.toml`. El web
 | Omitir un bloque que falla al dibujarse en vez de cerrar el juego | `stability.skipBrokenBlocks` |
 | Agrupar las limpiezas de colores de bioma que causan tirones | `stability.coalesceTints` |
 | Césped y nieve mejorados en los escalones | `terrain.betterGrass` |
+| Culling de entidades Display y armor stands (distancia, cámara y muros) | `entityCulling.*` |
+| Mostrar en el título cuánto tardó en arrancar el juego | `startup.timer` |
 
 Config del cliente: `config/optimizersodiumaddon-client.toml`.
 
@@ -59,6 +61,7 @@ Config del cliente: `config/optimizersodiumaddon-client.toml`.
 |---|---|
 | `/osareload` | Muestra en el chat el tiempo de la última recarga de recursos; `on` y `off` lo escriben tras cada recarga |
 | `/osatune [info|auto|low|medium|high]` | Detecta el hardware o aplica un perfil gráfico |
+| `/osacull` | Muestra los contadores del culling de entidades; `reset` los pone a cero |
 
 ## Comandos (`/osa`, nivel OP 2+)
 

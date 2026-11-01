@@ -27,6 +27,7 @@
     "client.LoadingOverlayMixin",
     "client.ChunkBuilderMeshingTaskMixin",
     "client.ClientLevelMixin",
+    "client.SodiumSearchMixin",
     "client.OptionInstanceAccessor",
     "client.WindowMixin"
   ],
