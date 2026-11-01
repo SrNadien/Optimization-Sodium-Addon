@@ -13,10 +13,18 @@
     "common.CraftingMenuMixin"
   ],
   "client": [
+    "client.BlockLightEngineMixin",
+    "client.ChunkBuilderMeshingTaskMixin",
+    "client.ClientLevelMixin",
     "client.EntityRenderDispatcherMixin",
+    "client.LightEngineAccessor",
+    "client.LoadingOverlayMixin",
+    "client.MthMixin",
+    "client.OptionInstanceAccessor",
     "client.ParticleAccessor",
     "client.ParticleEngineMixin",
     "client.RenderTargetMixin",
+    "client.SimpleReloadInstanceMixin",
     "client.WindowMixin"
   ],
   "server": [
