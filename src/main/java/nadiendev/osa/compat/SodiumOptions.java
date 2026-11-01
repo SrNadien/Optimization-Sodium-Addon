@@ -2,19 +2,26 @@ package nadiendev.osa.compat;
 
 import nadiendev.osa.OptimizerSodiumAddon;
 import nadiendev.osa.OsaConfig;
+import nadiendev.osa.client.AutoTune;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPointForge;
+import net.caffeinemc.mods.sodium.api.config.StorageEventHandler;
 import net.caffeinemc.mods.sodium.api.config.structure.BooleanOptionBuilder;
 import net.caffeinemc.mods.sodium.api.config.structure.ConfigBuilder;
 import net.caffeinemc.mods.sodium.api.config.structure.IntegerOptionBuilder;
 import net.caffeinemc.mods.sodium.api.config.structure.OptionGroupBuilder;
 import net.caffeinemc.mods.sodium.api.config.structure.OptionPageBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 @ConfigEntryPointForge(OptimizerSodiumAddon.MODID)
 public class SodiumOptions implements ConfigEntryPoint {
+
     @Override
     public void registerConfigLate(ConfigBuilder builder) {
         OsaConfig.Client c = OsaConfig.CLIENT;
@@ -24,7 +31,22 @@ public class SodiumOptions implements ConfigEntryPoint {
                 .addPage(page(builder, "general")
                         .addOptionGroup(group(builder)
                                 .addOption(toggle(builder, "borderless_f11", c.borderlessF11, true))
-                                .addOption(toggle(builder, "gpu_leak_fix", c.gpuLeakFix, true))))
+                                .addOption(toggle(builder, "gpu_leak_fix", c.gpuLeakFix, true)))
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "reload_hide_overlay", c.reloadHideOverlay, true))
+                                .addOption(toggle(builder, "reload_counter", c.reloadCounter, true))
+                                .addOption(toggle(builder, "reload_profile", c.reloadProfile, true)))
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "skip_broken_blocks", c.skipBrokenBlocks, true))
+                                .addOption(toggle(builder, "coalesce_tints", c.coalesceTints, true)))
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "better_grass", c.betterGrass::get, c.betterGrass::set, false, SodiumOptions::saveAndRefresh)))
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "aggressive_culling", SodiumSettings::aggressiveCulling, SodiumSettings::setAggressiveCulling, false, SodiumSettings::save))
+                                .addOption(toggle(builder, "exact_translucency", SodiumSettings::exactTranslucency, SodiumSettings::setExactTranslucency, false, SodiumSettings::save)))
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "auto_tune", c.tuneEnabled::get, SodiumOptions::setAutoTune, true, SodiumOptions::save))
+                                .addOption(toggle(builder, "fast_math", c.fastMath, false))))
                 .addPage(page(builder, "visuals")
                         .addOptionGroup(group(builder)
                                 .addOption(toggle(builder, "fog_terrain", c.terrainFog, true))
@@ -45,6 +67,12 @@ public class SodiumOptions implements ConfigEntryPoint {
                         .addOptionGroup(group(builder)
                                 .addOption(slider(builder, "xp_max", c.xpMax, 0, 512, 10, 60))
                                 .addOption(slider(builder, "xp_distance", c.xpDistance, 4, 128, 2, 24))))
+                .addPage(page(builder, "lights")
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "dynamic_lights", c.dynamicLights, false))
+                                .addOption(slider(builder, "dynamic_lights_max", c.dynamicLightsMaxSources, 1, 256, 1, 24))
+                                .addOption(slider(builder, "dynamic_lights_distance", c.dynamicLightsDistance, 8, 128, 4, 32))
+                                .addOption(toggle(builder, "dynamic_lights_burning", c.dynamicLightsBurning, true))))
                 .addPage(page(builder, "particles")
                         .addOptionGroup(group(builder)
                                 .addOption(slider(builder, "particle_total", c.particleMaxTotal, 0, 16384, 100, 3000))
@@ -64,17 +92,37 @@ public class SodiumOptions implements ConfigEntryPoint {
         return Identifier.fromNamespaceAndPath(OptimizerSodiumAddon.MODID, key);
     }
 
+    private static void setAutoTune(boolean enabled) {
+        boolean wasEnabled = OsaConfig.CLIENT.tuneEnabled.get();
+        OsaConfig.CLIENT.tuneEnabled.set(enabled);
+        if (enabled && !wasEnabled) AutoTune.applyManually();
+    }
+
     private static void save() {
         OsaConfig.CLIENT_SPEC.save();
     }
 
+    private static void saveAndRefresh() {
+        save();
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(() -> {
+            if (minecraft.level != null) minecraft.levelExtractor.allChanged();
+        });
+    }
+
     private static BooleanOptionBuilder toggle(
             ConfigBuilder builder, String key, ModConfigSpec.BooleanValue value, boolean fallback) {
+        return toggle(builder, key, value::get, value::set, fallback, SodiumOptions::save);
+    }
+
+    private static BooleanOptionBuilder toggle(
+            ConfigBuilder builder, String key, Supplier<Boolean> getter, Consumer<Boolean> setter, boolean fallback,
+            StorageEventHandler storage) {
         return builder.createBooleanOption(id(key))
                 .setName(Component.translatable("optimizersodiumaddon.option." + key))
                 .setTooltip(Component.translatable("optimizersodiumaddon.option." + key + ".tooltip"))
-                .setStorageHandler(SodiumOptions::save)
-                .setBinding(value::set, value::get)
+                .setStorageHandler(storage)
+                .setBinding(setter, getter)
                 .setDefaultValue(fallback);
     }
 

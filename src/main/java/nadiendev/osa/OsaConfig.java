@@ -1,11 +1,15 @@
 package nadiendev.osa;
 
+import nadiendev.osa.client.DynamicLightSettings;
+import nadiendev.osa.client.FastMath;
+import nadiendev.osa.client.TuneProfile;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public final class OsaConfig {
@@ -56,6 +60,45 @@ public final class OsaConfig {
 
     public static boolean gpuLeakFixEnabled() {
         return !clientReady() || CLIENT.gpuLeakFix.get();
+    }
+
+    public static boolean fastMathConfigured() {
+        return clientReady() && CLIENT.fastMath.get();
+    }
+
+    public static boolean hideReloadOverlay() {
+        return clientReady() && CLIENT.reloadHideOverlay.get();
+    }
+
+    public static boolean betterGrassEnabled() {
+        return clientReady() && CLIENT.betterGrass.get();
+    }
+
+    public static List<Identifier> betterGrassBlocks() {
+        List<? extends String> names = clientReady()
+                ? CLIENT.betterGrassBlocks.get()
+                : List.of("minecraft:grass_block", "minecraft:podzol", "minecraft:mycelium");
+        return names.stream().map(Identifier::tryParse).filter(Objects::nonNull).toList();
+    }
+
+    public static boolean skipBrokenBlocksEnabled() {
+        return clientReady() && CLIENT.skipBrokenBlocks.get();
+    }
+
+    public static boolean coalesceTintsEnabled() {
+        return clientReady() && CLIENT.coalesceTints.get();
+    }
+
+    public static int tintIntervalTicks() {
+        return clientReady() ? CLIENT.tintIntervalTicks.get() : 1;
+    }
+
+    public static boolean reloadCounterEnabled() {
+        return clientReady() && CLIENT.reloadCounter.get();
+    }
+
+    public static boolean reloadWatched() {
+        return clientReady() && (CLIENT.reloadProfile.get() || !CLIENT.reloadSkip.get().isEmpty());
     }
 
     public static final class Server {
@@ -176,6 +219,38 @@ public final class OsaConfig {
         public final ModConfigSpec.BooleanValue waterOverlay;
         public final ModConfigSpec.BooleanValue fireOverlay;
 
+        public final ModConfigSpec.BooleanValue reloadProfile;
+        public final ModConfigSpec.BooleanValue betterGrass;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> betterGrassBlocks;
+        public final ModConfigSpec.BooleanValue skipBrokenBlocks;
+        public final ModConfigSpec.BooleanValue coalesceTints;
+        public final ModConfigSpec.IntValue tintIntervalTicks;
+        public final ModConfigSpec.BooleanValue reloadHideOverlay;
+        public final ModConfigSpec.BooleanValue reloadCounter;
+        public final ModConfigSpec.IntValue reloadReportSeconds;
+        public final ModConfigSpec.IntValue reloadTopCount;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> reloadSkip;
+
+        public final ModConfigSpec.BooleanValue tuneEnabled;
+        public final ModConfigSpec.EnumValue<TuneProfile> tuneProfile;
+        public final ModConfigSpec.BooleanValue tuneApplied;
+        public final ModConfigSpec.BooleanValue tuneGraphics;
+        public final ModConfigSpec.BooleanValue tuneSodium;
+        public final ModConfigSpec.BooleanValue tuneChloride;
+        public final ModConfigSpec.BooleanValue tuneAddon;
+        public final ModConfigSpec.IntValue tuneRenderDistanceLow;
+        public final ModConfigSpec.IntValue tuneRenderDistanceMedium;
+        public final ModConfigSpec.IntValue tuneRenderDistanceHigh;
+        public final ModConfigSpec.BooleanValue fastMath;
+
+        public final ModConfigSpec.BooleanValue dynamicLights;
+        public final ModConfigSpec.IntValue dynamicLightsMaxSources;
+        public final ModConfigSpec.IntValue dynamicLightsDistance;
+        public final ModConfigSpec.IntValue dynamicLightsInterval;
+        public final ModConfigSpec.BooleanValue dynamicLightsBurning;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> dynamicLightsItems;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> dynamicLightsEntities;
+
         Client(ModConfigSpec.Builder b) {
             b.comment("Armor stands").push("armorStands");
             armorStandMax = b.comment("Maximo de armor stands dibujados a la vez (los mas cercanos). 0 = sin limite.")
@@ -227,6 +302,84 @@ public final class OsaConfig {
             waterOverlay = b.comment("Textura de agua sobre la vista al nadar.").define("water", true);
             fireOverlay = b.comment("Llamas sobre la vista al arder.").define("fire", true);
             b.pop();
+
+            b.comment("Recarga de recursos (resource packs, idioma, F3+T)").push("reload");
+            reloadProfile = b.comment("Medir cuanto tarda cada listener en cada recarga y escribir los mas lentos en el log y en el chat. Sirve para saber que mod hace lenta la recarga.")
+                    .define("profile", true);
+            reloadHideOverlay = b.comment("No mostrar la pantalla de carga de Mojang (fondo, logo y barra) al recargar recursos: resource packs, idioma, F3+T. La del arranque del juego se ve igual.")
+                    .define("hideOverlay", true);
+            reloadCounter = b.comment("Mostrar en una esquina de la pantalla el tiempo que lleva la recarga y, al terminar, el tiempo total durante unos segundos.")
+                    .define("counter", true);
+            reloadReportSeconds = b.comment("Solo avisar en el chat si la recarga tardo al menos estos segundos. El log siempre lo registra.")
+                    .defineInRange("reportSeconds", 10, 0, 3600);
+            reloadTopCount = b.comment("Cuantos listeners mostrar en cada lista del informe.")
+                    .defineInRange("topCount", 8, 1, 30);
+            reloadSkip = b.comment("Listeners que NO se recargan en las recargas posteriores a la primera (resource packs, F3+T). Se compara por el comienzo del nombre de la clase, tal como sale en el informe.",
+                            "Empieza vacia. Saltar un listener que el juego necesita rompe texturas, modelos o sonidos: usalo solo para los que el informe marque como lentos y no dependan de los recursos.")
+                    .defineListAllowEmpty("skipListeners", List.of(), () -> "", o -> o instanceof String);
+            b.pop();
+
+            b.comment("Terreno").push("terrain");
+            betterGrass = b.comment("Cesped y nieve mejorados: si el bloque de al lado y un nivel mas abajo es del mismo tipo, el lateral usa la textura de arriba y los escalones se ven continuos.")
+                    .define("betterGrass", false);
+            betterGrassBlocks = b.comment("Bloques a los que se aplica. Un cambio en esta lista se nota al recargar recursos (F3+T).")
+                    .defineListAllowEmpty("betterGrassBlocks", List.of("minecraft:grass_block", "minecraft:podzol", "minecraft:mycelium"), () -> "", o -> o instanceof String);
+            b.pop();
+
+            b.comment("Estabilidad y tirones al dibujar").push("stability");
+            skipBrokenBlocks = b.comment("Si un bloque de un mod falla al dibujarse en un chunk, se omite solo ese bloque y se avisa en el log, en vez de cerrar el juego.")
+                    .define("skipBrokenBlocks", true);
+            coalesceTints = b.comment("Muchos mods limpian la cache de colores de bioma en cada tick y eso provoca tirones. Con esto se agrupan en una sola limpieza cada pocos ticks.")
+                    .define("coalesceTints", true);
+            tintIntervalTicks = b.comment("Cada cuantos ticks como maximo se hace la limpieza de colores de bioma.")
+                    .defineInRange("tintIntervalTicks", 4, 1, 40);
+            b.pop();
+
+            b.comment("Ajuste automatico segun tu PC. Solo toca la configuracion grafica.").push("autoTune");
+            tuneEnabled = b.comment("Activado por defecto: la primera vez que se abre el juego detecta el hardware y completa solo lo que no cambiaste.",
+                            "Si lo apagas y lo volves a encender a mano (o usas /osatune), configura todo con el perfil.")
+                    .define("enabled", true);
+            tuneProfile = b.comment("AUTO elige segun el hardware. LOW, MEDIUM o HIGH fuerzan ese perfil.")
+                    .defineEnum("profile", TuneProfile.AUTO);
+            tuneApplied = b.comment("Lo marca el mod al aplicar el perfil. Ponelo en false para que se aplique otra vez al proximo arranque.")
+                    .define("applied", false);
+            tuneGraphics = b.comment("Ajustar las opciones graficas de Minecraft (distancia de dibujado, nubes, particulas...). Se guarda una copia en options.txt.osa-backup.")
+                    .define("graphics", true);
+            tuneSodium = b.comment("Ajustar Sodium (sodium-options.json). Se aplica al reiniciar el juego. Copia en sodium-options.json.osa-backup.")
+                    .define("sodium", true);
+            tuneChloride = b.comment("Ajustar Chloride si esta instalado (niebla, particulas, culling).")
+                    .define("chloride", true);
+            tuneAddon = b.comment("Ajustar los limites de este mod (armor stands, items, orbes, particulas).")
+                    .define("addon", true);
+            tuneRenderDistanceLow = b.comment("Distancia de dibujado (chunks) del perfil LOW.")
+                    .defineInRange("renderDistanceLow", 2, 2, 32);
+            tuneRenderDistanceMedium = b.comment("Distancia de dibujado (chunks) del perfil MEDIUM.")
+                    .defineInRange("renderDistanceMedium", 10, 2, 32);
+            tuneRenderDistanceHigh = b.comment("Distancia de dibujado (chunks) del perfil HIGH.")
+                    .defineInRange("renderDistanceHigh", 16, 2, 32);
+            b.pop();
+
+            b.comment("Luces dinamicas: lo que llevas en la mano, lo que tiras al suelo y los mobs que brillan alumbran a su alrededor. Solo en el cliente.").push("dynamicLights");
+            dynamicLights = b.comment("Activar las luces dinamicas. Cuesta un poco de rendimiento porque hay que recalcular la luz cuando algo se mueve.")
+                    .define("enabled", false);
+            dynamicLightsMaxSources = b.comment("Maximo de fuentes de luz dinamicas a la vez (las mas cercanas a la camara).")
+                    .defineInRange("maxSources", 24, 1, 256);
+            dynamicLightsDistance = b.comment("Distancia maxima (bloques) a la camara para que una fuente alumbre.")
+                    .defineInRange("maxDistance", 32, 8, 128);
+            dynamicLightsInterval = b.comment("Cada cuantos ticks se recalculan las fuentes. Mas alto cuesta menos pero la luz se actualiza mas tarde.")
+                    .defineInRange("updateTicks", 2, 1, 20);
+            dynamicLightsBurning = b.comment("Las entidades en llamas alumbran con luz 15.")
+                    .define("burningEntities", true);
+            dynamicLightsItems = b.comment("Luz de items que no son bloques (los bloques como antorchas, faroles o piedra luminosa ya usan la suya). Formato modid:item=nivel.")
+                    .defineListAllowEmpty("items", List.of("minecraft:lava_bucket=15", "minecraft:blaze_rod=10"), () -> "", o -> o instanceof String);
+            dynamicLightsEntities = b.comment("Luz de tipos de entidad. Formato modid:entidad=nivel.")
+                    .defineListAllowEmpty("entities", List.of("minecraft:blaze=10", "minecraft:fireball=12", "minecraft:small_fireball=12", "minecraft:magma_cube=8"), () -> "", o -> o instanceof String);
+            b.pop();
+
+            b.comment("Matematicas").push("math");
+            fastMath = b.comment("Seno y coseno con una tabla chica interpolada, solo al dibujar. Es mas preciso que el de vanilla, asi que no cambia nada visible. La ganancia es muy chica.")
+                    .define("fastMath", false);
+            b.pop();
         }
     }
 
@@ -236,6 +389,8 @@ public final class OsaConfig {
     static void invalidateCaches() {
         aiWhitelistExact = null;
         aiWhitelistNamespaces = null;
+        FastMath.setEnabled(fastMathConfigured());
+        DynamicLightSettings.refresh();
     }
 
     public static boolean isAiWhitelisted(Identifier id) {

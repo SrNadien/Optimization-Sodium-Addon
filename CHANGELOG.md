@@ -1,3 +1,14 @@
+## 1.0.1 - 2026-11-01
+
+- Resource reloads: the Mojang loading screen is no longer drawn on reloads (resource packs, language, F3+T), a timer shows how long the reload takes, and a report in the log lists the slowest listeners. /osareload prints the last time in the chat.
+- Automatic tuning: detects your hardware on first launch and fills in only the graphics settings you have not changed. /osatune applies a profile on demand.
+- Dynamic lights: torches and other light sources light up around them in hand, dropped or carried by mobs. Off by default.
+- Fast math: sine and cosine from a precise interpolated table while drawing. Off by default.
+- Stability: a block from a mod that fails to render is skipped instead of crashing the game, and biome color cache refreshes are grouped to avoid stutter.
+- Fixed a crash with firework particles when their flash particle is disabled.
+- Sodium shortcuts: aggressive culling and exact translucency sorting.
+- Improved grass and snow: steps of grass, podzol and mycelium join visually. Off by default.
+
 ## 1.0.0 - 2026-10-31
 
 First release for NeoForge 26.2.
