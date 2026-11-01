@@ -31,6 +31,7 @@ public final class ClientEvents {
     @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         ReloadTimer.drawDone(event.getGuiGraphics());
+        StartupTimer.draw(event.getScreen(), event.getGuiGraphics());
     }
 
     @SubscribeEvent
@@ -43,5 +44,6 @@ public final class ClientEvents {
         RenderLimits.clear();
         DynamicLights.clear();
         TintCoalescer.clear();
+        EntityCulling.clear();
     }
 }
