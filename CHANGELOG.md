@@ -1,3 +1,12 @@
+## 1.0.2 - 2026-11-01
+
+- Fixed a black screen while joining a server that sends a resource pack: with the loading screen hidden, the screen underneath is now drawn during the reload.
+- Armor stands are no longer limited by amount, because many servers use them as models and only the entities near you are loaded anyway. They now follow the general entity culling, by distance and behind blocks.
+- Entity culling (off by default): display entities, like the models some servers use, and armor stands are no longer drawn when they are too far, outside the camera or behind blocks. /osacull shows the counters.
+- Automatic tuning is now off by default and never raises graphics settings on its own: only the low profile changes them, so it never makes the game heavier.
+- The title screen shows how long the game took to start, and the log records it.
+- Spanish translations for the Sodium and Chloride settings that were missing.
+
 ## 1.0.1 - 2026-11-01
 
 - Resource reloads: the Mojang loading screen is no longer drawn on reloads (resource packs, language, F3+T), a timer shows how long the reload takes, and a report in the log lists the slowest listeners. /osareload prints the last time in the chat.

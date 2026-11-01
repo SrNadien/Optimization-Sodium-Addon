@@ -1,13 +1,16 @@
 package nadiendev.osa.loader;
 
 import nadiendev.osa.client.AutoTune;
+import nadiendev.osa.client.CullCommands;
 import nadiendev.osa.client.DynamicLights;
+import nadiendev.osa.client.EntityCulling;
 import nadiendev.osa.client.GpuLeakCleaner;
 import nadiendev.osa.client.JoinTimer;
 import nadiendev.osa.client.ParticleLimits;
 import nadiendev.osa.client.ReloadCommands;
 import nadiendev.osa.client.ReloadTimer;
 import nadiendev.osa.client.RenderLimits;
+import nadiendev.osa.client.StartupTimer;
 import nadiendev.osa.client.TintCoalescer;
 import nadiendev.osa.client.TuneCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -35,8 +38,12 @@ public final class ClientHooks {
         ScreenEvents.BEFORE_INIT.register((client, screen, width, height) -> {
             if (screen instanceof ConnectScreen) JoinTimer.onConnectScreen();
         });
-        ScreenEvents.AFTER_INIT.register((client, screen, width, height) ->
-                ScreenEvents.afterRender(screen).register((current, graphics, mouseX, mouseY, tickDelta) -> ReloadTimer.drawDone(graphics)));
+        ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+            ScreenEvents.afterRender(screen).register((current, graphics, mouseX, mouseY, tickDelta) -> {
+                ReloadTimer.drawDone(graphics);
+                StartupTimer.draw(current, graphics);
+            });
+        });
         HudRenderCallback.EVENT.register((graphics, tickDelta) -> {
             if (Minecraft.getInstance().screen == null) ReloadTimer.drawDone(graphics);
         });
@@ -44,6 +51,7 @@ public final class ClientHooks {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             ReloadCommands.register(dispatcher);
             TuneCommands.register(dispatcher);
+            CullCommands.register(dispatcher);
         });
 
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> JoinTimer.onLoggingIn());
@@ -51,6 +59,7 @@ public final class ClientHooks {
             RenderLimits.clear();
             DynamicLights.clear();
             TintCoalescer.clear();
+            EntityCulling.clear();
             JoinTimer.onLogout();
         });
     }

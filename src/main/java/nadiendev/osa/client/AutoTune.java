@@ -48,7 +48,8 @@ public final class AutoTune {
         TuneProfile tier = requested == TuneProfile.AUTO ? hardware.tier() : requested;
         TunePreset preset = TunePreset.of(tier, hardware);
 
-        int graphics = tune.graphics ? applyGraphics(minecraft, preset, force) : 0;
+        boolean lightenOnly = force || tier == TuneProfile.LOW;
+        int graphics = tune.graphics && lightenOnly ? applyGraphics(minecraft, preset, force) : 0;
         int addon = tune.addon ? applyAddon(preset, force) : 0;
         int sodium = tune.sodium ? applySodium(preset, force) : 0;
         int chloride = tune.chloride && preset.chlorideLow() && ChlorideBridge.available() ? applyChloride(force) : 0;
@@ -114,8 +115,6 @@ public final class AutoTune {
     private static int applyAddon(TunePreset preset, boolean force) {
         OsaConfig.Client config = OsaConfig.CLIENT;
         int changed = 0;
-        changed += fill(config.armorStands.maxRendered, DEFAULTS.armorStands.maxRendered, preset.armorMax(), v -> config.armorStands.maxRendered = v, force);
-        changed += fill(config.armorStands.renderDistance, DEFAULTS.armorStands.renderDistance, preset.armorDistance(), v -> config.armorStands.renderDistance = v, force);
         changed += fill(config.items.maxRendered, DEFAULTS.items.maxRendered, preset.itemMax(), v -> config.items.maxRendered = v, force);
         changed += fill(config.items.renderDistance, DEFAULTS.items.renderDistance, preset.itemDistance(), v -> config.items.renderDistance = v, force);
         changed += fill(config.xp.maxRendered, DEFAULTS.xp.maxRendered, preset.xpMax(), v -> config.xp.maxRendered = v, force);
@@ -193,7 +192,7 @@ public final class AutoTune {
             changed += chlorideFlag("particles", flag);
         }
         if (force || ChlorideBridge.disabledParticlesEmpty()) {
-            if (ChlorideBridge.addAllNamespaces()) changed++;
+            if (ChlorideBridge.addAllParticles()) changed++;
         }
         if (changed > 0) ChlorideBridge.write();
         return changed;
