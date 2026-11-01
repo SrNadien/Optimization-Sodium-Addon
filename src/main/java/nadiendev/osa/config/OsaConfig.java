@@ -63,6 +63,14 @@ public final class OsaConfig {
         return !clientReady() || CLIENT.gpu.leakFix;
     }
 
+    public static boolean entityCullingEnabled() {
+        return clientReady() && CLIENT.entityCulling.enabled;
+    }
+
+    public static boolean startupTimerEnabled() {
+        return clientReady() && CLIENT.startup.timer;
+    }
+
     public static boolean fastMathConfigured() {
         return clientReady() && CLIENT.math.fastMath;
     }
@@ -312,6 +320,8 @@ public final class OsaConfig {
         public AutoTune autoTune = new AutoTune();
         public DynamicLights dynamicLights = new DynamicLights();
         public MathOptions math = new MathOptions();
+        public Culling entityCulling = new Culling();
+        public Startup startup = new Startup();
 
         public static final class Reload {
             public boolean profile = true;
@@ -334,7 +344,7 @@ public final class OsaConfig {
         }
 
         public static final class AutoTune {
-            public boolean enabled = true;
+            public boolean enabled = false;
             public TuneProfile profile = TuneProfile.AUTO;
             public boolean applied = false;
             public boolean graphics = true;
@@ -355,13 +365,29 @@ public final class OsaConfig {
             public List<String> entities = new ArrayList<>(List.of("minecraft:blaze=10", "minecraft:fireball=12", "minecraft:small_fireball=12", "minecraft:magma_cube=8"));
         }
 
+        public static final class Culling {
+            public boolean enabled = false;
+            public boolean displays = true;
+            public boolean armorStands = true;
+            public int maxDistance = 64;
+            public int textMaxDistance = 32;
+            public int neverCullWithin = 12;
+            public double frustumMargin = 2.0;
+            public boolean occlusion = true;
+            public int occlusionMinDistance = 6;
+            public int occlusionRecheckMs = 200;
+            public int occlusionBudget = 150;
+        }
+
+        public static final class Startup {
+            public boolean timer = true;
+        }
+
         public static final class MathOptions {
             public boolean fastMath = false;
         }
 
         public static final class ArmorStands {
-            public int maxRendered = 32;
-            public int renderDistance = 24;
             public boolean hideInvisibleEmpty = true;
         }
 
@@ -421,9 +447,18 @@ public final class OsaConfig {
             if (dynamicLights.items == null) dynamicLights.items = new ArrayList<>();
             if (dynamicLights.entities == null) dynamicLights.entities = new ArrayList<>();
             if (math == null) math = new MathOptions();
+            if (entityCulling == null) entityCulling = new Culling();
+            if (startup == null) startup = new Startup();
         }
 
         void sanitize() {
+            entityCulling.maxDistance = clamp(entityCulling.maxDistance, 0, 512);
+            entityCulling.textMaxDistance = clamp(entityCulling.textMaxDistance, 0, 512);
+            entityCulling.neverCullWithin = clamp(entityCulling.neverCullWithin, 0, 128);
+            entityCulling.frustumMargin = clamp(entityCulling.frustumMargin, 0.0, 16.0);
+            entityCulling.occlusionMinDistance = clamp(entityCulling.occlusionMinDistance, 0, 128);
+            entityCulling.occlusionRecheckMs = clamp(entityCulling.occlusionRecheckMs, 50, 5000);
+            entityCulling.occlusionBudget = clamp(entityCulling.occlusionBudget, 10, 2000);
             reload.reportSeconds = clamp(reload.reportSeconds, 0, 3600);
             reload.topCount = clamp(reload.topCount, 1, 30);
             stability.tintIntervalTicks = clamp(stability.tintIntervalTicks, 1, 40);
@@ -433,8 +468,6 @@ public final class OsaConfig {
             dynamicLights.maxSources = clamp(dynamicLights.maxSources, 1, 256);
             dynamicLights.maxDistance = clamp(dynamicLights.maxDistance, 8, 128);
             dynamicLights.updateTicks = clamp(dynamicLights.updateTicks, 1, 20);
-            armorStands.maxRendered = clamp(armorStands.maxRendered, 0, 4096);
-            armorStands.renderDistance = clamp(armorStands.renderDistance, 4, 256);
             items.maxRendered = clamp(items.maxRendered, 0, 4096);
             items.renderDistance = clamp(items.renderDistance, 4, 256);
             xp.maxRendered = clamp(xp.maxRendered, 0, 4096);
@@ -459,6 +492,8 @@ public final class OsaConfig {
             autoTune = other.autoTune;
             dynamicLights = other.dynamicLights;
             math = other.math;
+            entityCulling = other.entityCulling;
+            startup = other.startup;
         }
     }
 }

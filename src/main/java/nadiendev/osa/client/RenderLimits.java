@@ -21,7 +21,6 @@ public final class RenderLimits {
 
     private static final double ALWAYS_VISIBLE_SQ = 8 * 8;
 
-    private static Set<Entity> allowedStands = new ReferenceOpenHashSet<>();
     private static Set<Entity> allowedItems = new ReferenceOpenHashSet<>();
     private static Set<Entity> allowedXp = new ReferenceOpenHashSet<>();
     private static int ticks;
@@ -29,7 +28,6 @@ public final class RenderLimits {
     private RenderLimits() {}
 
     public static void clear() {
-        allowedStands = new ReferenceOpenHashSet<>();
         allowedItems = new ReferenceOpenHashSet<>();
         allowedXp = new ReferenceOpenHashSet<>();
     }
@@ -43,25 +41,22 @@ public final class RenderLimits {
         }
         Vec3 cam = mc.gameRenderer.getMainCamera().position();
 
-        List<Entity> stands = new ArrayList<>();
         List<Entity> items = new ArrayList<>();
         List<Entity> orbs = new ArrayList<>();
         for (Entity e : level.entitiesForRendering()) {
-            if (e instanceof ArmorStand s) {
-                if (!(s.hasCustomName() && s.isCustomNameVisible())) stands.add(e);
-            }
-            else if (e instanceof ItemEntity) items.add(e);
+            if (e instanceof ItemEntity) items.add(e);
             else if (e instanceof ExperienceOrb) orbs.add(e);
         }
 
-        allowedStands = pick(stands, cam, OsaConfig.CLIENT.armorStands.maxRendered, OsaConfig.CLIENT.armorStands.renderDistance);
         allowedItems = pick(items, cam, OsaConfig.CLIENT.items.maxRendered, OsaConfig.CLIENT.items.renderDistance);
         allowedXp = pick(orbs, cam, OsaConfig.CLIENT.xp.maxRendered, OsaConfig.CLIENT.xp.renderDistance);
     }
 
     private static Set<Entity> pick(List<Entity> list, Vec3 cam, int max, int distance) {
-        double maxSq = (double) distance * distance;
-        list.removeIf(e -> e.distanceToSqr(cam) > maxSq);
+        if (distance > 0) {
+            double maxSq = (double) distance * distance;
+            list.removeIf(e -> e.distanceToSqr(cam) > maxSq);
+        }
         if (max > 0 && list.size() > max) {
             list.sort(Comparator.comparingDouble(e -> e.distanceToSqr(cam)));
             list = list.subList(0, max);
@@ -74,8 +69,7 @@ public final class RenderLimits {
         Set<Entity> allowed;
         if (e instanceof ArmorStand stand) {
             if (stand.hasCustomName() && stand.isCustomNameVisible()) return true;
-            if (OsaConfig.CLIENT.armorStands.hideInvisibleEmpty && stand.isInvisible() && isEmpty(stand)) return false;
-            allowed = allowedStands;
+            return !(OsaConfig.CLIENT.armorStands.hideInvisibleEmpty && stand.isInvisible() && isEmpty(stand));
         } else if (e instanceof ItemEntity) {
             allowed = allowedItems;
         } else if (e instanceof ExperienceOrb) {

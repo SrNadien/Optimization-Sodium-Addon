@@ -53,7 +53,8 @@ public final class AutoTune {
         TuneProfile tier = requested == TuneProfile.AUTO ? hardware.tier() : requested;
         TunePreset preset = TunePreset.of(tier, hardware);
 
-        int graphics = config.graphics ? applyGraphics(minecraft, preset, force) : 0;
+        boolean lightenOnly = force || tier == TuneProfile.LOW;
+        int graphics = config.graphics && lightenOnly ? applyGraphics(minecraft, preset, force) : 0;
         int addon = config.addon ? applyAddon(preset, force) : 0;
         int sodium = config.sodium ? applySodium(preset, force) : 0;
 
@@ -120,8 +121,6 @@ public final class AutoTune {
         OsaConfig.Client config = OsaConfig.CLIENT;
         OsaConfig.Client defaults = new OsaConfig.Client();
         int changed = 0;
-        changed += fill(config.armorStands.maxRendered, preset.armorMax(), defaults.armorStands.maxRendered, force, v -> config.armorStands.maxRendered = v);
-        changed += fill(config.armorStands.renderDistance, preset.armorDistance(), defaults.armorStands.renderDistance, force, v -> config.armorStands.renderDistance = v);
         changed += fill(config.items.maxRendered, preset.itemMax(), defaults.items.maxRendered, force, v -> config.items.maxRendered = v);
         changed += fill(config.items.renderDistance, preset.itemDistance(), defaults.items.renderDistance, force, v -> config.items.renderDistance = v);
         changed += fill(config.xp.maxRendered, preset.xpMax(), defaults.xp.maxRendered, force, v -> config.xp.maxRendered = v);
