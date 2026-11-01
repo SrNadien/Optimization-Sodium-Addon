@@ -100,6 +100,14 @@ public final class OsaConfig {
         return clientReady() ? CLIENT.stability.tintIntervalTicks : 1;
     }
 
+    public static boolean startupTimerEnabled() {
+        return clientReady() && CLIENT.startup.timer;
+    }
+
+    public static boolean entityCullingEnabled() {
+        return clientReady() && CLIENT.entityCulling.enabled;
+    }
+
     public static Path file() {
         return Platform.configDir().resolve(FILE);
     }
@@ -313,10 +321,10 @@ public final class OsaConfig {
         public Tune autoTune = new Tune();
         public Lights dynamicLights = new Lights();
         public MathOptions math = new MathOptions();
+        public Culling entityCulling = new Culling();
+        public Startup startup = new Startup();
 
         public static final class ArmorStands {
-            public int maxRendered = 32;
-            public int renderDistance = 24;
             public boolean hideInvisibleEmpty = true;
         }
 
@@ -381,7 +389,7 @@ public final class OsaConfig {
         }
 
         public static final class Tune {
-            public boolean enabled = true;
+            public boolean enabled = false;
             public TuneProfile profile = TuneProfile.AUTO;
             public boolean applied = false;
             public boolean graphics = true;
@@ -401,6 +409,24 @@ public final class OsaConfig {
             public boolean burningEntities = true;
             public List<String> items = new ArrayList<>(List.of("minecraft:lava_bucket=15", "minecraft:blaze_rod=10"));
             public List<String> entities = new ArrayList<>(List.of("minecraft:blaze=10", "minecraft:fireball=12", "minecraft:small_fireball=12", "minecraft:magma_cube=8"));
+        }
+
+        public static final class Culling {
+            public boolean enabled = false;
+            public boolean displays = true;
+            public boolean armorStands = true;
+            public int maxDistance = 64;
+            public int textMaxDistance = 32;
+            public int neverCullWithin = 12;
+            public double frustumMargin = 2.0;
+            public boolean occlusion = true;
+            public int occlusionMinDistance = 6;
+            public int occlusionRecheckMs = 200;
+            public int occlusionBudget = 150;
+        }
+
+        public static final class Startup {
+            public boolean timer = true;
         }
 
         public static final class MathOptions {
@@ -427,11 +453,11 @@ public final class OsaConfig {
             if (dynamicLights.items == null) dynamicLights.items = new ArrayList<>();
             if (dynamicLights.entities == null) dynamicLights.entities = new ArrayList<>();
             if (math == null) math = new MathOptions();
+            if (entityCulling == null) entityCulling = new Culling();
+            if (startup == null) startup = new Startup();
         }
 
         void sanitize() {
-            armorStands.maxRendered = clamp(armorStands.maxRendered, 0, 4096);
-            armorStands.renderDistance = clamp(armorStands.renderDistance, 4, 256);
             items.maxRendered = clamp(items.maxRendered, 0, 4096);
             items.renderDistance = clamp(items.renderDistance, 4, 256);
             xp.maxRendered = clamp(xp.maxRendered, 0, 4096);
@@ -448,6 +474,13 @@ public final class OsaConfig {
             dynamicLights.maxSources = clamp(dynamicLights.maxSources, 1, 256);
             dynamicLights.maxDistance = clamp(dynamicLights.maxDistance, 8, 128);
             dynamicLights.updateTicks = clamp(dynamicLights.updateTicks, 1, 20);
+            entityCulling.maxDistance = clamp(entityCulling.maxDistance, 0, 512);
+            entityCulling.textMaxDistance = clamp(entityCulling.textMaxDistance, 0, 512);
+            entityCulling.neverCullWithin = clamp(entityCulling.neverCullWithin, 0, 128);
+            entityCulling.frustumMargin = clamp(entityCulling.frustumMargin, 0.0, 16.0);
+            entityCulling.occlusionMinDistance = clamp(entityCulling.occlusionMinDistance, 0, 128);
+            entityCulling.occlusionRecheckMs = clamp(entityCulling.occlusionRecheckMs, 50, 5000);
+            entityCulling.occlusionBudget = clamp(entityCulling.occlusionBudget, 10, 2000);
         }
 
         void copyFrom(Client other) {
@@ -465,6 +498,8 @@ public final class OsaConfig {
             autoTune = other.autoTune;
             dynamicLights = other.dynamicLights;
             math = other.math;
+            entityCulling = other.entityCulling;
+            startup = other.startup;
         }
     }
 }
