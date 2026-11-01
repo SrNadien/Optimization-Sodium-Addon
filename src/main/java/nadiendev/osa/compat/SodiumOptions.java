@@ -5,6 +5,7 @@ import nadiendev.osa.client.AutoTune;
 import nadiendev.osa.config.OsaConfig;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;
 import net.caffeinemc.mods.sodium.api.config.StorageEventHandler;
+import net.caffeinemc.mods.sodium.api.config.option.OptionImpact;
 import net.caffeinemc.mods.sodium.api.config.structure.BooleanOptionBuilder;
 import net.caffeinemc.mods.sodium.api.config.structure.ConfigBuilder;
 import net.caffeinemc.mods.sodium.api.config.structure.IntegerOptionBuilder;
@@ -15,11 +16,27 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.function.BooleanSupplier;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
 public class SodiumOptions implements ConfigEntryPoint {
+    private static final Map<String, OptionImpact> IMPACTS = Map.ofEntries(
+            Map.entry("better_grass", OptionImpact.MEDIUM),
+            Map.entry("exact_translucency", OptionImpact.MEDIUM),
+            Map.entry("auto_tune", OptionImpact.VARIES),
+            Map.entry("item_max", OptionImpact.VARIES),
+            Map.entry("item_distance", OptionImpact.VARIES),
+            Map.entry("xp_max", OptionImpact.VARIES),
+            Map.entry("xp_distance", OptionImpact.VARIES),
+            Map.entry("particle_total", OptionImpact.VARIES),
+            Map.entry("particle_per_tick", OptionImpact.VARIES),
+            Map.entry("particle_distance", OptionImpact.VARIES),
+            Map.entry("dynamic_lights", OptionImpact.MEDIUM),
+            Map.entry("dynamic_lights_max", OptionImpact.MEDIUM),
+            Map.entry("dynamic_lights_distance", OptionImpact.MEDIUM)
+    );
 
     @Override
     public void registerConfigLate(ConfigBuilder builder) {
@@ -32,6 +49,7 @@ public class SodiumOptions implements ConfigEntryPoint {
                                 .addOption(toggle(builder, "borderless_f11", () -> c.window.borderlessF11, v -> c.window.borderlessF11 = v, true))
                                 .addOption(toggle(builder, "gpu_leak_fix", () -> c.gpu.leakFix, v -> c.gpu.leakFix = v, true)))
                         .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "startup_timer", () -> c.startup.timer, v -> c.startup.timer = v, true))
                                 .addOption(toggle(builder, "reload_hide_overlay", () -> c.reload.hideOverlay, v -> c.reload.hideOverlay = v, true))
                                 .addOption(toggle(builder, "reload_counter", () -> c.reload.counter, v -> c.reload.counter = v, true))
                                 .addOption(toggle(builder, "reload_profile", () -> c.reload.profile, v -> c.reload.profile = v, true)))
@@ -44,7 +62,7 @@ public class SodiumOptions implements ConfigEntryPoint {
                                 .addOption(toggle(builder, "aggressive_culling", SodiumSettings::aggressiveCulling, SodiumSettings::setAggressiveCulling, false, SodiumSettings::save))
                                 .addOption(toggle(builder, "exact_translucency", SodiumSettings::exactTranslucency, SodiumSettings::setExactTranslucency, false, SodiumSettings::save)))
                         .addOptionGroup(group(builder)
-                                .addOption(toggle(builder, "auto_tune", () -> c.autoTune.enabled, SodiumOptions::setAutoTune, true, SodiumOptions::save))
+                                .addOption(toggle(builder, "auto_tune", () -> c.autoTune.enabled, SodiumOptions::setAutoTune, false, SodiumOptions::save))
                                 .addOption(toggle(builder, "fast_math", () -> c.math.fastMath, v -> c.math.fastMath = v, false))))
                 .addPage(page(builder, "visuals")
                         .addOptionGroup(group(builder)
@@ -57,9 +75,11 @@ public class SodiumOptions implements ConfigEntryPoint {
                                 .addOption(toggle(builder, "overlay_fire", () -> c.overlays.fire, v -> c.overlays.fire = v, true))))
                 .addPage(page(builder, "render")
                         .addOptionGroup(group(builder)
-                                .addOption(slider(builder, "armor_max", () -> c.armorStands.maxRendered, v -> c.armorStands.maxRendered = v, 0, 256, 4, 32))
-                                .addOption(slider(builder, "armor_distance", () -> c.armorStands.renderDistance, v -> c.armorStands.renderDistance = v, 4, 128, 2, 24))
                                 .addOption(toggle(builder, "armor_hide_invisible", () -> c.armorStands.hideInvisibleEmpty, v -> c.armorStands.hideInvisibleEmpty = v, true)))
+                        .addOptionGroup(group(builder)
+                                .addOption(toggle(builder, "entity_culling", () -> c.entityCulling.enabled, v -> c.entityCulling.enabled = v, false))
+                                .addOption(toggle(builder, "entity_culling_occlusion", () -> c.entityCulling.occlusion, v -> c.entityCulling.occlusion = v, true))
+                                .addOption(slider(builder, "entity_culling_distance", () -> c.entityCulling.maxDistance, v -> c.entityCulling.maxDistance = v, 0, 256, 8, 64)))
                         .addOptionGroup(group(builder)
                                 .addOption(slider(builder, "item_max", () -> c.items.maxRendered, v -> c.items.maxRendered = v, 0, 1024, 10, 150))
                                 .addOption(slider(builder, "item_distance", () -> c.items.renderDistance, v -> c.items.renderDistance = v, 4, 128, 2, 32)))
@@ -77,6 +97,10 @@ public class SodiumOptions implements ConfigEntryPoint {
                                 .addOption(slider(builder, "particle_total", () -> c.particles.maxTotal, v -> c.particles.maxTotal = v, 0, 16384, 100, 3000))
                                 .addOption(slider(builder, "particle_per_tick", () -> c.particles.maxPerTick, v -> c.particles.maxPerTick = v, 0, 4096, 50, 400))
                                 .addOption(slider(builder, "particle_distance", () -> c.particles.maxDistance, v -> c.particles.maxDistance = v, 8, 128, 2, 48))));
+    }
+
+    private static OptionImpact impactOf(String key) {
+        return IMPACTS.getOrDefault(key, OptionImpact.LOW);
     }
 
     private static OptionPageBuilder page(ConfigBuilder builder, String key) {
@@ -121,6 +145,7 @@ public class SodiumOptions implements ConfigEntryPoint {
         return builder.createBooleanOption(id(key))
                 .setName(Component.translatable(OptimizerSodiumAddon.MODID + ".option." + key))
                 .setTooltip(Component.translatable(OptimizerSodiumAddon.MODID + ".option." + key + ".tooltip"))
+                .setImpact(impactOf(key))
                 .setStorageHandler(storage)
                 .setBinding(setter, getter::getAsBoolean)
                 .setDefaultValue(fallback);
@@ -131,6 +156,7 @@ public class SodiumOptions implements ConfigEntryPoint {
         return builder.createIntegerOption(id(key))
                 .setName(Component.translatable(OptimizerSodiumAddon.MODID + ".option." + key))
                 .setTooltip(Component.translatable(OptimizerSodiumAddon.MODID + ".option." + key + ".tooltip"))
+                .setImpact(impactOf(key))
                 .setRange(min, max, step)
                 .setValueFormatter(v -> v == 0 && min == 0
                         ? Component.translatable(OptimizerSodiumAddon.MODID + ".unlimited")

@@ -47,11 +47,12 @@ public final class ChlorideBridge {
         }
     }
 
-    public static boolean addAllNamespaces() {
+    public static boolean addAllParticles() {
         try {
             List<ResourceLocation> disabled = disabled();
+            disabled.removeAll(allNamespaces());
             boolean added = false;
-            for (ResourceLocation id : allNamespaces()) {
+            for (ResourceLocation id : allParticleIds()) {
                 if (!disabled.contains(id)) {
                     disabled.add(id);
                     added = true;
@@ -66,7 +67,7 @@ public final class ChlorideBridge {
 
     public static boolean allParticlesDisabled() {
         try {
-            return disabled().containsAll(allNamespaces());
+            return disabled().containsAll(allParticleIds());
         } catch (ReflectiveOperationException | RuntimeException e) {
             return false;
         }
@@ -75,8 +76,9 @@ public final class ChlorideBridge {
     public static void setAllParticles(boolean disable) {
         try {
             List<ResourceLocation> disabled = disabled();
+            disabled.removeAll(allNamespaces());
             if (disable) {
-                for (ResourceLocation id : allNamespaces()) {
+                for (ResourceLocation id : allParticleIds()) {
                     if (!disabled.contains(id)) disabled.add(id);
                 }
             } else {
@@ -95,6 +97,10 @@ public final class ChlorideBridge {
         } catch (ReflectiveOperationException | RuntimeException e) {
             OptimizerSodiumAddon.LOG.warn("[OSA] No se pudo guardar la config de Chloride: {}", e.toString());
         }
+    }
+
+    private static Set<ResourceLocation> allParticleIds() {
+        return new LinkedHashSet<>(BuiltInRegistries.PARTICLE_TYPE.keySet());
     }
 
     private static Set<ResourceLocation> allNamespaces() {
