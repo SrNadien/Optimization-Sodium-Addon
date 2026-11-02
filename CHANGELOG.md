@@ -1,4 +1,4 @@
-## 1.0.2 - 2026-11-01
+## 1.0.3 - 2026-11-02
 
 - Fixed a black screen while joining a server that sends a resource pack: with the loading screen hidden, the screen underneath is now drawn during the reload.
 - Armor stands are no longer limited by amount, because many servers use them as models and only the entities near you are loaded anyway. They now follow the general entity culling, by distance and behind blocks.
